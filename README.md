@@ -1,1 +1,2 @@
-first commit
+Readme not worth of a commit but will be a commit anyway, this repo is born for me to learn how to use tools such as numpy, pandas and pyspark (plus maybe something i will add along the way).
+That said the commits will be extremely slow and not so frequent for that reason.
