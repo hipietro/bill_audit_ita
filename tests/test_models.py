@@ -3,7 +3,7 @@ from decimal import Decimal
 
 import pytest
 
-from bill_audit.models import Bill
+from bill_audit.models import Bill, EnergyConsumption
 
 
 def test_create_valid_bill():
@@ -66,4 +66,50 @@ to verify that the Bill class behaves as expected when creating valid bills and 
 function checks a specific aspect of the Bill class, such as creating a valid bill, rejecting an empty provider, rejecting
 an invalid billing period, and rejecting a negative total amount. The tests use assertions to check that the expected
 exceptions are raised and that the attributes of the Bill instance are set correctly.
+"""
+
+def test_create_energy_consumption():
+    consumption=EnergyConsumption(
+        total_kwh=Decimal("241.50"),
+        measured_kwh=Decimal("200.00"),
+        estimated_kwh=Decimal("41.50"),
+    )
+
+    assert consumption.total_kwh==Decimal("241.50")
+    assert consumption.measured_kwh == Decimal("200.00")
+    assert consumption.estimated_kwh == Decimal("41.50")
+
+def test_bill_can_contain_consumption():
+    consumption = EnergyConsumption(
+        total_kwh=Decimal("241.50"),
+        measured_kwh=Decimal("200.00"),
+        estimated_kwh=Decimal("41.50"),
+    )
+
+    bill = Bill(
+        provider="Example Energy",
+        bill_number="INV-001",
+        issue_date=date(2026, 9, 1),
+        billing_period_start=date(2026, 7, 1),
+        billing_period_end=date(2026, 8, 31),
+        total_amount=Decimal("84.37"),
+        consumption=consumption,
+    )
+
+    assert bill.consumption is consumption #here we use is because == checks if 2 obj have the same value but is checks if they're the same obj in memory
+                                           #and since we want to verify that Bill stores EnergyConsumption that we provided
+    assert bill.consumption.total_kwh == Decimal("241.50")
+
+
+def test_reject_negative_total_consumption():
+    with pytest.raises(
+        ValueError,
+        match="Total consumption cannot be negative",
+    ):
+        EnergyConsumption(
+            total_kwh=Decimal("-1.00"),
+        )
+
+"""
+
 """
