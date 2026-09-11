@@ -3,6 +3,37 @@
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
+from enum import StrEnum
+
+class CostCategory(StrEnum):
+    #supported categories for italian bill components
+
+    ENERGY_SALES="energy_sales"
+    NETWORK_AND_SYSTEM_CHARGES="network_and_system_charges"
+    EXCISE_DUTY="excise_duty"
+    VAT="vat"
+    SOCIAL_BONUS="social_bonus"
+    DISCOUNT="discount"
+    ADJUSTMENT="adjustment"
+    OTHER_ITEM="other_item"
+    ADDITIONAL_SERVICE="additional_service"
+    TV_LICENSE_FEE="tv_license_fee"
+
+@dataclass(frozen=True)
+class CostComponent:
+
+    #a single cost or credit reported in a bill
+
+    category: CostCategory
+    description: str
+    amount: Decimal
+
+
+    def __post_init__(self)->None:
+        #validate the cost component
+        if not self.description.strip():
+            raise ValueError("Cost component description cannot be empty.")
+
 
 
 @dataclass(frozen=True)
@@ -34,6 +65,18 @@ class Bill:
     total_amount:Decimal
     currency:str="EUR"
     consumption: EnergyConsumption | None=None
+    cost_components: tuple[CostComponent, ...]=()
+
+    @property
+    def components_total(self)->Decimal:
+        #return the sum of all cost components
+        return sum(
+            (
+                component.amount
+                for component in self.cost_components
+            ),
+            start=Decimal("0"),
+        )
 
     def __post_init__(self) -> None:
         """Validate the bill after its creation."""

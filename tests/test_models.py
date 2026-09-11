@@ -3,7 +3,12 @@ from decimal import Decimal
 
 import pytest
 
-from bill_audit.models import Bill, EnergyConsumption
+from bill_audit.models import (
+    Bill,
+    CostCategory,
+    CostComponent,
+    EnergyConsumption,
+)
 
 
 def test_create_valid_bill():
@@ -109,6 +114,80 @@ def test_reject_negative_total_consumption():
         EnergyConsumption(
             total_kwh=Decimal("-1.00"),
         )
+
+def test_create_cost_component():
+    component = CostComponent(
+        category=CostCategory.ENERGY_SALES,
+        description="Vendita energia",
+        amount=Decimal("50.00"),
+    )
+
+    assert component.category == CostCategory.ENERGY_SALES
+    assert component.description == "Vendita energia"
+    assert component.amount == Decimal("50.00")
+
+
+def test_reject_empty_cost_component_description():
+    with pytest.raises(
+        ValueError,
+        match="Cost component description cannot be empty",
+    ):
+        CostComponent(
+            category=CostCategory.OTHER_ITEM,
+            description="   ",
+            amount=Decimal("5.00"),
+        )
+
+
+def test_allow_negative_discount():
+    discount = CostComponent(
+        category=CostCategory.DISCOUNT,
+        description="Sconto commerciale",
+        amount=Decimal("-5.00"),
+    )
+
+    assert discount.amount == Decimal("-5.00")
+
+
+def test_bill_calculates_cost_components_total():
+    energy = CostComponent(
+        category=CostCategory.ENERGY_SALES,
+        description="Vendita energia",
+        amount=Decimal("50.00"),
+    )
+    network = CostComponent(
+        category=CostCategory.NETWORK_AND_SYSTEM_CHARGES,
+        description="Rete e oneri",
+        amount=Decimal("10.00"),
+    )
+    vat = CostComponent(
+        category=CostCategory.VAT,
+        description="IVA",
+        amount=Decimal("6.60"),
+    )
+    discount = CostComponent(
+        category=CostCategory.DISCOUNT,
+        description="Sconto commerciale",
+        amount=Decimal("-5.00"),
+    )
+
+    bill = Bill(
+        provider="Example Energy",
+        bill_number="INV-001",
+        issue_date=date(2026, 9, 1),
+        billing_period_start=date(2026, 7, 1),
+        billing_period_end=date(2026, 8, 31),
+        total_amount=Decimal("61.60"),
+        cost_components=(
+            energy,
+            network,
+            vat,
+            discount,
+        ),
+    )
+
+    assert bill.components_total == Decimal("61.60")
+
 
 """
 
